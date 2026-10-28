@@ -1,6 +1,6 @@
 # ply-reader
 
-Rust PLY mesh reader with ASCII and binary little/big endian support. Extracted from OpenAEC Foundation Open 3D Viewer Studio.
+Rust PLY mesh reader: ASCII, binary little endian and big endian.
 
 ```rust,no_run
 use ply_reader::PlyLoader;
