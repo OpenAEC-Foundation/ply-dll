@@ -1,25 +1,23 @@
 //! Stanford PLY (ASCII, binary little/big endian): vertices with optional normals and colours,
 //! polygon faces (fan triangulated). Kept as stored (Z up is the common convention for scans).
 
-use openaec_model::{Loader, DEFAULT_COLOR, Source};
-use openaec_model::model::{smooth_normals, Layer};
 
-pub struct PlyLoader;
+/// Mesh read from a PLY file; coordinates retain the file's units and axes.
+#[derive(Debug, Clone, Default)]
+pub struct Mesh {
+    pub name: String,
+    pub color: [f32; 3],
+    pub positions: Vec<f32>,
+    pub normals: Vec<f32>,
+    pub colors: Option<Vec<[u8; 4]>>,
+    pub indices: Vec<u32>,
+}
 
-impl Loader for PlyLoader {
-    fn name(&self) -> &'static str {
-        "PLY"
-    }
+const DEFAULT_COLOR: [f32; 3] = [0.72, 0.72, 0.74];
 
-    fn extensions(&self) -> &'static [&'static str] {
-        &["ply"]
-    }
-
-    fn load(&self, source: &Source) -> Result<Vec<Layer>, String> {
-        let data = source.read()?;
-        let name = source.stem();
-        parse(&data, name)
-    }
+/// Read an ASCII or binary PLY mesh from bytes.
+pub fn read(data: &[u8]) -> Result<Mesh, String> {
+    parse(data, "PLY".into())
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -125,7 +123,7 @@ impl Reader<'_> {
     }
 }
 
-fn parse(data: &[u8], name: String) -> Result<Vec<Layer>, String> {
+fn parse(data: &[u8], name: String) -> Result<Mesh, String> {
     let header_end = data
         .windows(10)
         .position(|w| w == b"end_header")
@@ -249,15 +247,15 @@ fn parse(data: &[u8], name: String) -> Result<Vec<Layer>, String> {
         return Err("PLY: face index out of range".into());
     }
     let normals = if has_normals { normals } else { smooth_normals(&positions, &indices) };
-    Ok(vec![Layer {
+    Ok(Mesh {
         name,
         color: DEFAULT_COLOR,
         positions,
         normals,
         colors: has_colors.then_some(colors),
         indices,
-        ..Layer::default()
-    }])
+        ..Mesh::default()
+    })
 }
 
 #[cfg(test)]
@@ -268,8 +266,8 @@ mod tests {
     fn ascii_quad() {
         let ply = b"ply\nformat ascii 1.0\nelement vertex 4\nproperty float x\nproperty float y\nproperty float z\nelement face 1\nproperty list uchar int vertex_indices\nend_header\n0 0 0\n1 0 0\n1 1 0\n0 1 0\n4 0 1 2 3\n";
         let layers = parse(ply, "q".into()).unwrap();
-        assert_eq!(layers[0].indices, vec![0, 1, 2, 0, 2, 3]);
-        assert_eq!(&layers[0].normals[0..3], &[0.0, 0.0, 1.0]);
+        assert_eq!(layers.indices, vec![0, 1, 2, 0, 2, 3]);
+        assert_eq!(&layers.normals[0..3], &[0.0, 0.0, 1.0]);
     }
 
     #[test]
@@ -286,7 +284,24 @@ mod tests {
             d.extend_from_slice(&i.to_le_bytes());
         }
         let layers = parse(&d, "t".into()).unwrap();
-        assert_eq!(layers[0].indices.len(), 3);
-        assert_eq!(layers[0].colors.as_ref().unwrap()[0], [255, 0, 0, 255]);
+        assert_eq!(layers.indices.len(), 3);
+        assert_eq!(layers.colors.as_ref().unwrap()[0], [255, 0, 0, 255]);
     }
+}
+
+/// Compute vertex normals for PLY meshes that do not supply them.
+fn smooth_normals(positions: &[f32], indices: &[u32]) -> Vec<f32> {
+    let mut normals = vec![[0.0f32; 3]; positions.len() / 3];
+    let at = |i: u32| [positions[3*i as usize], positions[3*i as usize+1], positions[3*i as usize+2]];
+    for t in indices.chunks_exact(3) {
+        let (a, b, c) = (at(t[0]), at(t[1]), at(t[2]));
+        let u = [b[0]-a[0], b[1]-a[1], b[2]-a[2]];
+        let v = [c[0]-a[0], c[1]-a[1], c[2]-a[2]];
+        let n = [u[1]*v[2]-u[2]*v[1], u[2]*v[0]-u[0]*v[2], u[0]*v[1]-u[1]*v[0]];
+        for &i in t { for k in 0..3 { normals[i as usize][k] += n[k]; } }
+    }
+    normals.into_iter().flat_map(|n| {
+        let length = (n[0]*n[0] + n[1]*n[1] + n[2]*n[2]).sqrt();
+        if length > 0.0 { n.map(|v| v / length) } else { [0.0; 3] }
+    }).collect()
 }

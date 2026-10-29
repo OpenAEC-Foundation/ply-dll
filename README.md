@@ -3,15 +3,14 @@
 Rust PLY mesh reader: ASCII, binary little endian and big endian.
 
 ```rust,no_run
-use ply_reader::PlyLoader;
-use openaec_model::{load_with_loader, Progress, Source};
-let source = Source::from(std::path::Path::new("model.ply"));
-let model = load_with_loader(&PlyLoader, &source, &Progress::default())?;
-# Ok::<(), String>(())
+let bytes = std::fs::read("model.ply")?;
+let geometry = ply_reader::read(&bytes).map_err(std::io::Error::other)?;
+# Ok::<(), std::io::Error>(())
 ```
 
-Readers accept files or `Source::Bytes` (including browser-picked files). Output uses
-the shared `openaec-model` types, with no UI, iced, or GPU dependency.
+`read(&[u8])` returns one Mesh. The crate owns its format output types.
+Applications convert that output to their own scene representation. This library has no
+dependency on a shared application model, loader registry, UI or GPU.
 
 ## Validation
 
@@ -23,7 +22,6 @@ ASCII, binary little endian and big endian; optional vertex normals and colours;
 
 ## Use in another application
 
-Add this repository as a Cargo Git dependency, pinned to a commit. Also depend on
-`openaec-model` from the same Git URL and revision as this crate (see Cargo.toml)
-when constructing `Source` or consuming scene types. These repositories are private;
-Git needs an account or deploy key with read access.
+Add this repository as a Cargo Git dependency pinned to a commit, then call `read`.
+These repositories are private; Git requires read access. There are no private dependencies
+on other OpenAEC repositories.

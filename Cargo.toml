@@ -1,6 +1,6 @@
 [package]
 name = "ply-reader"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 rust-version = "1.88"
 license = "LGPL-3.0-or-later"
@@ -10,4 +10,3 @@ repository = "https://github.com/OpenAEC-Foundation/ply-reader"
 [workspace]
 
 [dependencies]
-openaec-model = { version = "0.1.0", git = "https://github.com/OpenAEC-Foundation/openaec-model", rev = "2994963fcea8d1240d44801dddd1d3a351f05629" }
