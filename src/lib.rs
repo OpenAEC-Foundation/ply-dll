@@ -302,6 +302,6 @@ fn smooth_normals(positions: &[f32], indices: &[u32]) -> Vec<f32> {
     }
     normals.into_iter().flat_map(|n| {
         let length = (n[0]*n[0] + n[1]*n[1] + n[2]*n[2]).sqrt();
-        if length > 0.0 { n.map(|v| v / length) } else { [0.0; 3] }
+        if length.is_finite() && length > 0.0 { n.map(|v| v / length) } else { [0.0; 3] }
     }).collect()
 }
