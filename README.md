@@ -1,6 +1,6 @@
-# ply-reader
+# ply-dll
 
-Rust PLY mesh reader: ASCII, binary little endian and big endian.
+Rust PLY mesh reader: ASCII, binary little endian and big endian. The crate is `ply-reader`.
 
 ```rust,no_run
 let bytes = std::fs::read("model.ply")?;
