@@ -5,7 +5,7 @@ edition = "2021"
 rust-version = "1.88"
 license = "LGPL-3.0-or-later"
 description = "Rust PLY mesh reader: ASCII, binary little endian and big endian"
-repository = "https://github.com/OpenAEC-Foundation/ply-reader"
+repository = "https://github.com/OpenAEC-Foundation/ply-dll"
 
 [workspace]
 
